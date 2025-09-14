@@ -19,15 +19,21 @@ var (
 	dnsServer string
 	keyName   string
 	keySecret string
+	zone      string
 )
 
 func main() {
-	dnsServer := os.Getenv("DNS_SERVER")
-	cname := os.Getenv("CNAME_TARGET")
-	keyName := os.Getenv("KEY_NAME")
-	keySecret := os.Getenv("KEY_SECRET")
+	dnsServer = os.Getenv("DNS_SERVER")
+	cname = os.Getenv("CNAME_TARGET")
+	keyName = os.Getenv("KEY_NAME")
+	keySecret = os.Getenv("KEY_SECRET")
+	zone = os.Getenv("ZONE")
 
-	if dnsServer == "" || cname == "" || keyName == "" || keySecret == "" {
+	if dnsServer == "" ||
+		cname == "" ||
+		keyName == "" ||
+		keySecret == "" ||
+		zone == "" {
 		panic("Env vars must be set")
 	}
 
@@ -103,6 +109,7 @@ func addRecord(name string) {
 	updates := make([]dns.RR, 1)
 	updates[0] = update
 	message := new(dns.Msg)
+	message.SetUpdate(dns.Fqdn(zone))
 	message.Insert(updates)
 	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
 	in, rtt, err := dnsClient.Exchange(message, dnsServer)
@@ -122,6 +129,7 @@ func removeRecord(name string) {
 	updates := make([]dns.RR, 1)
 	updates[0] = update
 	message := new(dns.Msg)
+	message.SetUpdate(dns.Fqdn(zone))
 	message.Remove(updates)
 	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
 	in, rtt, err := dnsClient.Exchange(message, dnsServer)
