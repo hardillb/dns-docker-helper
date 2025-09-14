@@ -60,8 +60,18 @@ func main() {
 		}
 		for _, env := range details.Config.Env {
 			if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-				host := strings.Split(env, "=")
+				host := strings.Split(env, "=")[1]
 				fmt.Println(host)
+				// need to check for , to see if multiple names
+				// Also need to check for existing names
+				if strings.Contains(host, ",") {
+					hosts := strings.Split(host, ",")
+					for _, element := range hosts {
+						addRecord(element)
+					}
+				} else {
+					addRecord(host)
+				}
 			}
 		}
 	}
@@ -80,9 +90,16 @@ func main() {
 				}
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-						host := strings.Split(env, "=")
+						host := strings.Split(env, "=")[1]
 						fmt.Println(host)
-
+						if strings.Contains(host, ",") {
+							hosts := strings.Split(host, ",")
+							for _, element := range hosts {
+								addRecord(element)
+							}
+						} else {
+							addRecord(host)
+						}
 					}
 				}
 			} else if msg.Action == "kill" || msg.Action == "stop" {
@@ -92,8 +109,16 @@ func main() {
 				}
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-						host := strings.Split(env, "=")
+						host := strings.Split(env, "=")[1]
 						fmt.Println(host)
+						if strings.Contains(host, ",") {
+							hosts := strings.Split(host, ",")
+							for _, element := range hosts {
+								removeRecord(element)
+							}
+						} else {
+							removeRecord(host)
+						}
 					}
 				}
 			}
@@ -138,4 +163,8 @@ func removeRecord(name string) {
 	} else {
 		fmt.Printf("%v\n", err)
 	}
+}
+
+func checkRecordExists(name string) bool {
+	return false
 }
