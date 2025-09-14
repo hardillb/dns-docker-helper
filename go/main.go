@@ -3,20 +3,43 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
+	"github.com/miekg/dns"
 	containertypes "github.com/moby/moby/api/types/container"
 	eventstypes "github.com/moby/moby/api/types/events"
 	"github.com/moby/moby/client"
 )
 
+var (
+	dnsClient dns.Client
+	cname     string
+	dnsServer string
+	keyName   string
+	keySecret string
+)
+
 func main() {
+	dnsServer := os.Getenv("DNS_SERVER")
+	cname := os.Getenv("CNAME_TARGET")
+	keyName := os.Getenv("KEY_NAME")
+	keySecret := os.Getenv("KEY_SECRET")
+
+	if dnsServer == "" || cname == "" || keyName == "" || keySecret == "" {
+		panic("Env vars must be set")
+	}
+
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)
 	}
 	defer cli.Close()
+
+	dnsClient := new(dns.Client)
+	dnsClient.TsigSecret = map[string]string{dns.Fqdn(keyName): keySecret}
 
 	containers, err := cli.ContainerList(ctx, containertypes.ListOptions{})
 	if err != nil {
@@ -31,7 +54,8 @@ func main() {
 		}
 		for _, env := range details.Config.Env {
 			if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-				fmt.Println(env)
+				host := strings.Split(env, "=")
+				fmt.Println(host)
 			}
 		}
 	}
@@ -50,7 +74,9 @@ func main() {
 				}
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-						fmt.Println(env)
+						host := strings.Split(env, "=")
+						fmt.Println(host)
+
 					}
 				}
 			} else if msg.Action == "kill" || msg.Action == "stop" {
@@ -60,10 +86,48 @@ func main() {
 				}
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
-						fmt.Println(env)
+						host := strings.Split(env, "=")
+						fmt.Println(host)
 					}
 				}
 			}
 		}
+	}
+}
+
+func addRecord(name string) {
+	update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
+	if err != nil {
+		panic(err)
+	}
+	updates := make([]dns.RR, 1)
+	updates[0] = update
+	message := new(dns.Msg)
+	message.Insert(updates)
+	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
+	in, rtt, err := dnsClient.Exchange(message, dnsServer)
+	if err != nil {
+		fmt.Printf("%v in %d\n", in, rtt)
+	} else {
+		fmt.Printf("%v\n", err)
+	}
+
+}
+
+func removeRecord(name string) {
+	update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
+	if err != nil {
+		panic(err)
+	}
+	updates := make([]dns.RR, 1)
+	updates[0] = update
+	message := new(dns.Msg)
+	message.Remove(updates)
+	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
+	in, rtt, err := dnsClient.Exchange(message, dnsServer)
+	if err != nil {
+		fmt.Printf("%v in %d\n", in, rtt)
+	} else {
+		fmt.Printf("%v\n", err)
 	}
 }
