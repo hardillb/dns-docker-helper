@@ -127,44 +127,57 @@ func main() {
 }
 
 func addRecord(name string) {
-	update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
-	if err != nil {
-		panic(err)
+	if !checkRecordExists(name) {
+		update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
+		if err != nil {
+			panic(err)
+		}
+		updates := make([]dns.RR, 1)
+		updates[0] = update
+		message := new(dns.Msg)
+		message.SetUpdate(dns.Fqdn(zone))
+		message.Insert(updates)
+		message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
+		in, rtt, err := dnsClient.Exchange(message, dnsServer)
+		if err != nil {
+			fmt.Printf("%v in %d\n", in, rtt)
+		} else {
+			fmt.Printf("%v\n", err)
+		}
 	}
-	updates := make([]dns.RR, 1)
-	updates[0] = update
-	message := new(dns.Msg)
-	message.SetUpdate(dns.Fqdn(zone))
-	message.Insert(updates)
-	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
-	in, rtt, err := dnsClient.Exchange(message, dnsServer)
-	if err != nil {
-		fmt.Printf("%v in %d\n", in, rtt)
-	} else {
-		fmt.Printf("%v\n", err)
-	}
-
 }
 
 func removeRecord(name string) {
-	update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
-	if err != nil {
-		panic(err)
-	}
-	updates := make([]dns.RR, 1)
-	updates[0] = update
-	message := new(dns.Msg)
-	message.SetUpdate(dns.Fqdn(zone))
-	message.Remove(updates)
-	message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
-	in, rtt, err := dnsClient.Exchange(message, dnsServer)
-	if err != nil {
-		fmt.Printf("%v in %d\n", in, rtt)
-	} else {
-		fmt.Printf("%v\n", err)
+	if checkRecordExists(name) {
+		update, err := dns.NewRR(fmt.Sprintf("%s 300 IN CNAME %s", name, cname))
+		if err != nil {
+			panic(err)
+		}
+		updates := make([]dns.RR, 1)
+		updates[0] = update
+		message := new(dns.Msg)
+		message.SetUpdate(dns.Fqdn(zone))
+		message.Remove(updates)
+		message.SetTsig(dns.Fqdn(keyName), dns.HmacSHA256, 300, time.Now().Unix())
+		in, rtt, err := dnsClient.Exchange(message, dnsServer)
+		if err != nil {
+			fmt.Printf("%v in %d\n", in, rtt)
+		} else {
+			fmt.Printf("%v\n", err)
+		}
 	}
 }
 
 func checkRecordExists(name string) bool {
+	m := new(dns.Msg)
+	m.SetQuestion(name, dns.TypeCNAME)
+	in, _, err := dnsClient.Exchange(m, dnsServer)
+	if err != nil {
+		if len(in.Answer) != 0 {
+			return true
+		} else {
+			return false
+		}
+	}
 	return false
 }
