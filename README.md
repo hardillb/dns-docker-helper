@@ -5,6 +5,12 @@ using [nginx-proxy/nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) cont
 
 This application watch for when containers are added or removed and will take the `VIRTUAL_HOST` environment variables on containers used to configure nginx-proxy/nginx-proxy and create a matching DNS CNAME entry.
 
+## Build
+
+```
+docker build . -t dns-docker-helper
+```
+
 ## Configuration
 
 The following environment variables need to be in scope
