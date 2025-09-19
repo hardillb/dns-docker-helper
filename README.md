@@ -23,7 +23,7 @@ The following environment variables need to be in scope
 
 ### Docker
 
-```
+```bash
 docker run -d -v /var/run/docker.sock:/var/run/docker.sock \
  -e DNS_SERVER=192.168.1.1:53 \
  -e CNAME_TARGET=example.com \
@@ -31,6 +31,32 @@ docker run -d -v /var/run/docker.sock:/var/run/docker.sock \
  -e KEY_SECRET=ADssd12343== \
  -e ZONE=example.com \
  hardillb/dns-docker-helper
+```
+
+### Docker Compose
+
+```yaml
+services:
+  nginx:
+    image: nginxproxy/nginx-proxy:latest
+    restart: always
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - VIRTUAL_HOST=www.example.com
+  dns:
+    image: hardillb/dns-docker-helper:latest
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    environment:
+      - DNS_SERVer=192.168.1.1:53
+      - CNAME_TARGET=example.com
+      - KEY_NAME=docker
+      - KEY_SECRET=ADssd12343==
+      - ZONE=example.com
 ```
 
 But would normally be run in a `docker-compose.yml` file along side nginx-proxy/nginx-proxy
