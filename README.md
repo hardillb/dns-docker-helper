@@ -1,9 +1,13 @@
 # DNS-DOCKER-HELPER
 
 A tool to dynamically update DNS entries for Docker containers exposed
-using [nginx-proxy/nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) container.
+using [nginx-proxy/nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) or 
+[Traefik](https://traefik.io/) container.
 
-This application watch for when containers are added or removed and will take the `VIRTUAL_HOST` environment variables on containers used to configure nginx-proxy/nginx-proxy and create a matching DNS CNAME entry.
+This application watch for when containers are added or removed and will take 
+the `VIRTUAL_HOST` environment variables or the Traefik 
+`traefik.http.routers.*.rule` lables on containers used to configure 
+nginx-proxy/nginx-proxy or Traefik and create a matching DNS CNAME entry.
 
 ## Build
 
