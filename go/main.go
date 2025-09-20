@@ -74,13 +74,17 @@ func main() {
 				}
 			}
 		}
-		for key, value := range details.Config.Labels {
-			if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
-				fmt.Printf("Adding %s\n", value)
-				host := strings.Split(value, "`")
-				addRecord(host[1])
-			}
 
+		value, present := details.Config.Labels["traefik.enable"]
+		if present && value == "true" {
+			for key, value := range details.Config.Labels {
+				if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+					fmt.Printf("Adding %s\n", value)
+					host := strings.Split(value, "`")
+					addRecord(host[1])
+				}
+
+			}
 		}
 	}
 
@@ -110,11 +114,14 @@ func main() {
 						}
 					}
 				}
-				for key, value := range details.Config.Labels {
-					if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
-						fmt.Printf("Adding %s\n", value)
-						host := strings.Split(value, "`")
-						addRecord(host[1])
+				value, present := details.Config.Labels["traefik.enable"]
+				if present && value == "true" {
+					for key, value := range details.Config.Labels {
+						if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+							fmt.Printf("Adding %s\n", value)
+							host := strings.Split(value, "`")
+							addRecord(host[1])
+						}
 					}
 				}
 			} else if msg.Action == "kill" || msg.Action == "stop" {
@@ -136,11 +143,14 @@ func main() {
 						}
 					}
 				}
-				for key, value := range details.Config.Labels {
-					if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
-						fmt.Printf("Removing %s\n", value)
-						host := strings.Split(value, "`")
-						removeRecord(host[1])
+				value, present := details.Config.Labels["traefik.enable"]
+				if present && value == "true" {
+					for key, value := range details.Config.Labels {
+						if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+							fmt.Printf("Removing %s\n", value)
+							host := strings.Split(value, "`")
+							removeRecord(host[1])
+						}
 					}
 				}
 			}
