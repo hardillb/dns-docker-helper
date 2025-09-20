@@ -53,7 +53,7 @@ func main() {
 	}
 
 	for _, container := range containers {
-		fmt.Println(container.ID)
+		fmt.Printf("%s\n", container.ID)
 		details, err := cli.ContainerInspect(ctx, container.ID)
 		if err != nil {
 			panic(err)
@@ -74,6 +74,14 @@ func main() {
 				}
 			}
 		}
+		for key, value := range details.Config.Labels {
+			if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+				fmt.Printf("Adding %s\n", value)
+				host := strings.Split(value, "`")
+				addRecord(host[1])
+			}
+
+		}
 	}
 
 	msgs, errs := cli.Events(ctx, eventstypes.ListOptions{})
@@ -91,7 +99,7 @@ func main() {
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
 						host := strings.Split(env, "=")[1]
-						fmt.Println(host)
+						fmt.Printf("Adding %s\n", host)
 						if strings.Contains(host, ",") {
 							hosts := strings.Split(host, ",")
 							for _, element := range hosts {
@@ -102,6 +110,13 @@ func main() {
 						}
 					}
 				}
+				for key, value := range details.Config.Labels {
+					if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+						fmt.Printf("Adding %s\n", value)
+						host := strings.Split(value, "`")
+						addRecord(host[1])
+					}
+				}
 			} else if msg.Action == "kill" || msg.Action == "stop" {
 				details, err := cli.ContainerInspect(ctx, msg.Actor.ID)
 				if err != nil {
@@ -110,7 +125,7 @@ func main() {
 				for _, env := range details.Config.Env {
 					if strings.HasPrefix(env, "VIRTUAL_HOST=") {
 						host := strings.Split(env, "=")[1]
-						fmt.Println(host)
+						fmt.Printf("Removing %s\n", host)
 						if strings.Contains(host, ",") {
 							hosts := strings.Split(host, ",")
 							for _, element := range hosts {
@@ -119,6 +134,13 @@ func main() {
 						} else {
 							removeRecord(host)
 						}
+					}
+				}
+				for key, value := range details.Config.Labels {
+					if strings.HasPrefix(key, "traefik.http.routers.") && strings.HasSuffix(key, ".rule") {
+						fmt.Printf("Removing %s\n", value)
+						host := strings.Split(value, "`")
+						removeRecord(host[1])
 					}
 				}
 			}
